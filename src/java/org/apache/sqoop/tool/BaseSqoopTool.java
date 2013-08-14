@@ -60,6 +60,9 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
 
   public static final String HELP_STR = "\nTry --help for usage instructions.";
 
+  // Custom json flag
+  public static final String TO_JSON_ARG = "to-json";
+
   // Here are all the arguments that are used by the standard sqoop tools.
   // Their names are recorded here so that tools can share them and their
   // use consistently. The argument parser applies the leading '--' to each
