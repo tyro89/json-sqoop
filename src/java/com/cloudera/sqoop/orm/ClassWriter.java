@@ -70,6 +70,7 @@ public class ClassWriter
     JAVA_RESERVED_WORDS.add("protected");
     JAVA_RESERVED_WORDS.add("true");
     JAVA_RESERVED_WORDS.add("const");
+    JAVA_RESERVED_WORDS.add("public");
   }
 
   public static final int CLASS_WRITER_VERSION =

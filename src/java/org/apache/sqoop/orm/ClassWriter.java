@@ -100,6 +100,7 @@ public class ClassWriter {
     JAVA_RESERVED_WORDS.add("protected");
     JAVA_RESERVED_WORDS.add("true");
     JAVA_RESERVED_WORDS.add("const");
+    JAVA_RESERVED_WORDS.add("public");
   }
 
   /**
@@ -836,55 +837,19 @@ public class ClassWriter {
     // which appends its own newline.
     sb.append("  public String toString(DelimiterSet delimiters, ");
     sb.append("boolean useRecordDelim) {\n");
-    sb.append("    StringBuilder __sb = new StringBuilder();\n");
-    sb.append("    char fieldDelim = delimiters.getFieldsTerminatedBy();\n");
+    sb.append("    Map obj=new LinkedHashMap();\n");
 
-    boolean first = true;
     for (String col : colNames) {
       int sqlType = columnTypes.get(col);
       String javaType = toJavaType(col, sqlType);
-      if (null == javaType) {
-        LOG.error("No Java type for SQL type " + sqlType
-                  + " for column " + col);
-        continue;
-      }
-
-      if (!first) {
-        // print inter-field tokens.
-        sb.append("    __sb.append(fieldDelim);\n");
-      }
-
-      first = false;
-
-      String stringExpr = stringifierForType(javaType, col);
-      if (null == stringExpr) {
-        LOG.error("No toString method for Java type " + javaType);
-        continue;
-      }
-
-      if (javaType.equals("String") && options.doHiveDropDelims()) {
-        sb.append("    // special case for strings hive, dropping"
-          + "delimiters \\n,\\r,\\01 from strings\n");
-        sb.append("    __sb.append(FieldFormatter.hiveStringDropDelims("
-          + stringExpr + ", delimiters));\n");
-      } else if (javaType.equals("String")
-        && options.getHiveDelimsReplacement() != null) {
-        sb.append("    // special case for strings hive, replacing "
-          + "delimiters \\n,\\r,\\01 with '"
-          + options.getHiveDelimsReplacement() + "' from strings\n");
-        sb.append("    __sb.append(FieldFormatter.hiveStringReplaceDelims("
-          + stringExpr + ", \"" + options.getHiveDelimsReplacement() + "\", "
-          + "delimiters));\n");
+      if(javaType.equals("java.sql.Timestamp")) {
+        sb.append("    obj.put(\"" + col + "\".replaceAll(\"[\\u0000-\\u001f]\", \"\"),\"\" + " + col + ");\n");
       } else {
-        sb.append("    __sb.append(FieldFormatter.escapeAndEnclose("
-            + stringExpr + ", delimiters));\n");
+        sb.append("    obj.put(\"" + col + "\".replaceAll(\"[\\u0000-\\u001f]\", \"\")," + col + ");\n");
       }
     }
 
-    sb.append("    if (useRecordDelim) {\n");
-    sb.append("      __sb.append(delimiters.getLinesTerminatedBy());\n");
-    sb.append("    }\n");
-    sb.append("    return __sb.toString();\n");
+    sb.append("    return JSONValue.toJSONString(obj) + \"\\n\";\n");
     sb.append("  }\n");
   }
 
@@ -1343,6 +1308,9 @@ public class ClassWriter {
     sb.append("import java.util.List;\n");
     sb.append("import java.util.Map;\n");
     sb.append("import java.util.TreeMap;\n");
+    sb.append("import java.util.Map;\n");
+    sb.append("import java.util.LinkedHashMap;\n");
+    sb.append("import org.json.simple.JSONValue;\n");
     sb.append("\n");
 
     String className = tableNameInfo.getShortClassForTable(tableName);
