@@ -800,6 +800,54 @@ public class ClassWriter {
   }
 
   /**
+   * Generate the toString() method if output format is set to json
+   * @param columnTypes - mapping from column names to sql types
+   * @param colNames - ordered list of column names for table.
+   * @param sb - StringBuilder to append code to
+   */
+  private void generateToJsonString(Map<String, Integer> columnTypes,
+      String [] colNames, StringBuilder sb) {
+
+    // The default toString() is the only method for now when
+    // saving data in json format. Note that we're replacing
+    // control characters in the key since it has been observed
+    // to occur and causes all kind of issues.
+    sb.append("  public String toString() {");
+    sb.append("    Map obj=new LinkedHashMap();\n");
+
+    for (String col : colNames) {
+      int sqlType = columnTypes.get(col);
+      String javaType = toJavaType(col, sqlType);
+
+      //Deal with commenting times, dates and timestamps
+      if(javaType.equals("java.sql.Timestamp")
+        || javaType.equals("java.sql.Date")
+        || javaType.equals("java.sql.Time")) {
+        sb.append("    obj.put(\"" + col + "\"," + col + "==null?null:(\"\" + " + col + "));\n");
+      } else {
+        sb.append("    obj.put(\"" + col + "\"," + col + ");\n");
+      }
+    }
+
+    sb.append("    return JSONValue.toJSONString(obj) + \"\\n\";\n");
+    sb.append("  }\n");
+
+    // To respect the sqoop record interface
+    sb.append("  public String toString(DelimiterSet delimiters) {\n");
+    sb.append("    return toString();\n");
+    sb.append("  }\n");
+
+    sb.append("  public String toString(boolean useRecordDelim) {\n");
+    sb.append("    return toString();\n");
+    sb.append("  }\n");
+
+    sb.append("  public String toString(DelimiterSet delimiters, ");
+    sb.append("boolean useRecordDelim) {\n");
+    sb.append("    return toString();\n");
+    sb.append("  }\n");
+  }
+
+  /**
    * Generate the toString() method.
    * @param columnTypes - mapping from column names to sql types
    * @param colNames - ordered list of column names for table.
@@ -837,19 +885,55 @@ public class ClassWriter {
     // which appends its own newline.
     sb.append("  public String toString(DelimiterSet delimiters, ");
     sb.append("boolean useRecordDelim) {\n");
-    sb.append("    Map obj=new LinkedHashMap();\n");
+    sb.append("    StringBuilder __sb = new StringBuilder();\n");
+    sb.append("    char fieldDelim = delimiters.getFieldsTerminatedBy();\n");
 
+    boolean first = true;
     for (String col : colNames) {
       int sqlType = columnTypes.get(col);
       String javaType = toJavaType(col, sqlType);
-      if(javaType.equals("java.sql.Timestamp")) {
-        sb.append("    obj.put(\"" + col + "\".replaceAll(\"[\\u0000-\\u001f]\", \"\"),\"\" + " + col + ");\n");
+      if (null == javaType) {
+        LOG.error("No Java type for SQL type " + sqlType
+                  + " for column " + col);
+        continue;
+      }
+
+      if (!first) {
+        // print inter-field tokens.
+        sb.append("    __sb.append(fieldDelim);\n");
+      }
+
+      first = false;
+
+      String stringExpr = stringifierForType(javaType, col);
+      if (null == stringExpr) {
+        LOG.error("No toString method for Java type " + javaType);
+        continue;
+      }
+
+      if (javaType.equals("String") && options.doHiveDropDelims()) {
+        sb.append("    // special case for strings hive, dropping"
+          + "delimiters \\n,\\r,\\01 from strings\n");
+        sb.append("    __sb.append(FieldFormatter.hiveStringDropDelims("
+          + stringExpr + ", delimiters));\n");
+      } else if (javaType.equals("String")
+        && options.getHiveDelimsReplacement() != null) {
+        sb.append("    // special case for strings hive, replacing "
+          + "delimiters \\n,\\r,\\01 with '"
+          + options.getHiveDelimsReplacement() + "' from strings\n");
+        sb.append("    __sb.append(FieldFormatter.hiveStringReplaceDelims("
+          + stringExpr + ", \"" + options.getHiveDelimsReplacement() + "\", "
+          + "delimiters));\n");
       } else {
-        sb.append("    obj.put(\"" + col + "\".replaceAll(\"[\\u0000-\\u001f]\", \"\")," + col + ");\n");
+        sb.append("    __sb.append(FieldFormatter.escapeAndEnclose("
+            + stringExpr + ", delimiters));\n");
       }
     }
 
-    sb.append("    return JSONValue.toJSONString(obj) + \"\\n\";\n");
+    sb.append("    if (useRecordDelim) {\n");
+    sb.append("      __sb.append(delimiters.getLinesTerminatedBy());\n");
+    sb.append("    }\n");
+    sb.append("    return __sb.toString();\n");
     sb.append("  }\n");
   }
 
@@ -1328,7 +1412,13 @@ public class ClassWriter {
     generateDbWrite(columnTypes, dbWriteColNames, sb);
     generateHadoopRead(columnTypes, colNames, sb);
     generateHadoopWrite(columnTypes, colNames, sb);
-    generateToString(columnTypes, colNames, sb);
+
+    if (options.isToJson()) {
+      generateToJsonString(columnTypes, colNames, sb);
+    } else {
+      generateToString(columnTypes, colNames, sb);
+    }
+
     generateParser(columnTypes, colNames, sb);
     generateCloneMethod(columnTypes, colNames, sb);
     generateGetFieldMap(columnTypes, colNames, sb);

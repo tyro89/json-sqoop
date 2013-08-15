@@ -756,7 +756,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       }
 
       if (in.hasOption(TO_JSON_ARG)) {
-        out.setToJsonMode(true);
+        out.setToJson(true);
       }
 
       if (!allTables) {

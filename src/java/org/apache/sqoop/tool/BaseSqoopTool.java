@@ -413,9 +413,14 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
         .create());
 
     commonOpts.addOption(OptionBuilder.withArgName("hdir")
-            .hasArg().withDescription("Override $HADOOP_MAPRED_HOME_ARG")
-            .withLongOpt(HADOOP_HOME_ARG)
-            .create());
+        .hasArg().withDescription("Override $HADOOP_MAPRED_HOME_ARG")
+        .withLongOpt(HADOOP_HOME_ARG)
+        .create());
+
+    commonOpts.addOption(OptionBuilder.withArgName("to-json")
+        .withDescription("Flag to mark output format as JSON")
+        .withLongOpt(TO_JSON_ARG)
+        .create());
 
     // misc (common)
     commonOpts.addOption(OptionBuilder

@@ -142,7 +142,7 @@ public class SqoopOptions implements Cloneable {
   @StoredAsProperty("hdfs.delete-target.dir") private boolean delete;
   @StoredAsProperty("hdfs.file.format") private FileLayout layout;
   @StoredAsProperty("direct.import") private boolean direct; // "direct mode."
-  @StoredAsProperty("to-json.import") private boolean toJson; // "to json mode."
+  @StoredAsProperty("to-json") private boolean toJson;
   @StoredAsProperty("db.batch") private boolean batchMode;
   private String tmpDir; // where temp data goes; usually /tmp; not serialized.
   private String hiveHome; // not serialized to metastore.
@@ -1188,7 +1188,11 @@ public class SqoopOptions implements Cloneable {
     this.direct = isDirect;
   }
 
-  public void setToJsonMode(boolean toJson) {
+  public boolean isToJson() {
+    return toJson;
+  }
+
+  public void setToJson(boolean toJson) {
     this.toJson = toJson;
   }
 
@@ -1739,13 +1743,6 @@ public class SqoopOptions implements Cloneable {
 
   public void setDirectSplitSize(long splitSize) {
     this.directSplitSize = splitSize;
-  }
-
-  /**
-   * @return true if we should use json
-   */
-  public long getToJsonMode() {
-    return this.toJsonMode;
   }
 
   /**
