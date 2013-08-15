@@ -809,9 +809,7 @@ public class ClassWriter {
       String [] colNames, StringBuilder sb) {
 
     // The default toString() is the only method for now when
-    // saving data in json format. Note that we're replacing
-    // control characters in the key since it has been observed
-    // to occur and causes all kind of issues.
+    // saving data in json format.
     sb.append("  public String toString() {");
     sb.append("    Map obj=new LinkedHashMap();\n");
 
@@ -1392,7 +1390,6 @@ public class ClassWriter {
     sb.append("import java.util.List;\n");
     sb.append("import java.util.Map;\n");
     sb.append("import java.util.TreeMap;\n");
-    sb.append("import java.util.Map;\n");
     sb.append("import java.util.LinkedHashMap;\n");
     sb.append("import org.json.simple.JSONValue;\n");
     sb.append("\n");
