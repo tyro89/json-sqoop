@@ -79,8 +79,6 @@ under the License.
   </publications>
   <dependencies>
 
-    <dependency org="com.googlecode.json-simple"  name="json-simple" rev="1.1.1" />
-
     <!-- Dependencies for Hadoop 2.0.0 -->
     <dependency org="org.apache.hadoop" name="hadoop-common"
       rev="${hadoop.version}" conf="hadoop200->default">
@@ -255,6 +253,9 @@ under the License.
 
     <dependency org="org.postgresql" name="postgresql"
       rev="${postgresql.version}" conf="common->default" />
+
+    <dependency org="com.googlecode.json-simple"  name="json-simple"
+      rev="1.1.1" />
 
     <exclude org="org.apache.hadoop" module="avro"/>
     <exclude org="commons-daemon" module="commons-daemon" />
